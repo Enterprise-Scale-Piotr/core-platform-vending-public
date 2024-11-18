@@ -46,10 +46,23 @@ module "role_assignment" {
   location                = var.location
   role_assignment_enabled = true
   role_assignments = [
+  /*
+  for sp_name, sp_details in data.terraform_remote_state.identity.outputs.service_principals : {
+      principal_id   = sp_details.object_id
+      definition     = contains(sp_name, "cd") ? "Owner" : (contains(sp_name, "ci") ? "Reader" : null)
+      relative_scope = ""
+    } if contains(sp_name, "cd") || contains(sp_name, "ci")
+  */
     {
-      #principal_id   = azuread_service_principal.sp_platform-dev-cd.object_id
-      principal_id   = data.terraform_remote_state.identity.outputs.service_principal_object_id
+      principal_id   = data.terraform_remote_state.identity.outputs.service_principals_ids["platform-dev-cd"].service_principal_object_id
+      #principal_id   = data.terraform_remote_state.identity.outputs.service_principal_object_id
       definition     = "Owner"
+      relative_scope = ""
+    },
+    {
+      principal_id   = data.terraform_remote_state.identity.outputs.service_principals_ids["platform-dev-ci"].service_principal_object_id
+      #principal_id   = data.terraform_remote_state.identity.outputs.service_principal_object_id
+      definition     = "Reader"
       relative_scope = ""
     }
   ]
