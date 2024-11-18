@@ -30,8 +30,10 @@ provider "azapi" {
 data "azuread_client_config" "current" {}
 
 # Create Azure AD Application
-resource "azuread_application" "sp_platform-dev-cd" {
-  display_name = "sp_platform-dev-cd"
+resource "azuread_application" "service_principals" {
+  #display_name = "sp_platform-dev-cd"
+  for_each     = toset(var.service_principal_names)
+  display_name = "sp-${each.value}"
   owners       = [data.azuread_client_config.current.object_id]
   # Configure OIDC federation
   feature_tags {
@@ -41,20 +43,23 @@ resource "azuread_application" "sp_platform-dev-cd" {
 }
 
 # Create Service Principal
-resource "azuread_service_principal" "sp_platform-dev-cd" {
-  client_id                    = azuread_application.sp_platform-dev-cd.client_id
+resource "azuread_service_principal" "service_principals" {
+  #client_id                    = azuread_application.sp_platform-dev-cd.client_id
+  for_each                     = toset(var.service_principal_names)
+  client_id                    = azuread_application.service_principals[each.key].client_id
   app_role_assignment_required = true
   owners                       = [data.azuread_client_config.current.object_id]
 }
 
 # Configure OIDC Federation Credentials
-resource "azuread_application_federated_identity_credential" "wif-platform-dev-cd" {
-  application_id = azuread_application.sp_platform-dev-cd.id
-  display_name   = "wif-platform-dev-cd"
-  description    = "GitHub OIDC federation wif-platform-dev-cd"
+resource "azuread_application_federated_identity_credential" "wif" {
+  for_each       = toset(var.service_principal_names)
+  application_id = azuread_application.service_principals[each.key].id
+  display_name   = "wif-${each.value}"
+  description    = "GitHub OIDC federation wif-${each.value}"
   audiences      = ["api://AzureADTokenExchange"]
   issuer         = "https://token.actions.githubusercontent.com"
-  subject        = "repo:WITT-AZURE-PLATFORM/atlz-platform:environment:platform-dev-cd" # Modify this according to your GitHub repo
+  subject        = "repo:WITT-AZURE-PLATFORM/atlz-platform:environment:${each.value}" # Modify this according to your GitHub repo
 
   # You can add multiple subject patterns like:
   # subject = "repo:your-org/your-repo:ref:refs/heads/main"
