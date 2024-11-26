@@ -1,0 +1,25 @@
+name: "03-IAM-CI"
+on:
+  pull_request:
+    #types:
+    #  - opened
+    #  - reopened
+    #  - synchronize
+    branches:
+      - main
+      - develop
+    paths:
+      - "03-iam/**"
+  workflow_dispatch:
+
+jobs:
+  validate_and_plan:
+    name: "03-IAM-CI"
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    uses: ./.github/workflows/template-ci.yaml
+    with:
+      gh_workflow: 03-iam
+    secrets: inherit

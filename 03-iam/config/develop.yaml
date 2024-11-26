@@ -1,0 +1,5 @@
+service_principal_names = [
+"platform-dev-cd",
+"platform-dev-ci"
+]
+mg_id = "atlzdev"

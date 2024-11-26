@@ -1,0 +1,84 @@
+# ATLZ Platform Dev / reusable workflow / terraform validate & plan
+# https://docs.github.com/en/actions/using-workflows/reusing-workflows
+
+on:
+  workflow_call:
+    inputs:
+      #environment:
+      #  required: true
+      #  type: string
+      gh_workflow:
+        required: true
+        type: string
+
+jobs:
+  validate:
+    name: Validate Terraform
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'bootstrap-prod' || 'bootstrap-dev' }}
+    defaults:
+      run:
+        working-directory: ${{ inputs.gh_workflow }}
+    env: ### Azure Service Principal based on Auth by secret
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      #ARM_USE_AZUREAD: true
+      #ARM_USE_OIDC: false
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.8.5"
+          terraform_wrapper: false
+
+      - name: Terraform Format Check
+        run: terraform fmt -check
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+          -backend-config="resource_group_name=${{vars.TFBE_RESOURCE_GROUP_NAME}}" \
+          -backend-config="storage_account_name=${{vars.TFBE_STORAGE_ACCOUNT_NAME}}" \
+          -backend-config="container_name=${{vars.TFBE_CONTAINER_NAME}}" \
+          -backend-config="key=${{ inputs.gh_workflow }}-${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}.tfstate"
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - uses: terraform-linters/setup-tflint@v4
+        name: Setup TFLint
+        with:
+          tflint_wrapper: true
+
+      - name: Show TFLint version
+        run: tflint --version
+
+      - name: Init TFLint
+        run: tflint --init
+
+      - name: Run TFLint
+        id: tflint
+        run: tflint
+        continue-on-error: false
+
+      - name: Run terraform plan
+        id: plan
+        run: terraform plan -var-file=./config/${{ github.ref == 'refs/heads/main' && 'product' || 'develop' }}.yaml -out=tfplan.out -no-color
+        continue-on-error: false
+
+      - name: Run terraform show # because of limited char count in github comments
+        id: show
+        run: terraform show tfplan.out -no-color
+
+      - name: Save tfplan.out artifact
+        id: save-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.pull_request.number }}-tf-plan
+          path: ${{ inputs.gh_workflow }}/tfplan.out

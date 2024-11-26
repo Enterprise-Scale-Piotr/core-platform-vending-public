@@ -1,0 +1,25 @@
+name: "01-Vending-CI"
+on:
+  pull_request:
+    #types:
+    #  - opened
+    #  - reopened
+    #  - synchronize
+    branches:
+      - main
+      - develop
+    paths:
+      - "01-vending/**"
+  workflow_dispatch:
+
+jobs:
+  validate_and_plan:
+    name: "01-Vending-CI"
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    uses: ./.github/workflows/template-ci.yaml
+    with:
+      gh_workflow: 01-vending
+    secrets: inherit

@@ -1,0 +1,34 @@
+name: "03-IAM-CD"
+on:
+  push:
+    #types:
+    #  - opened
+    #  - reopened
+    #  - synchronize
+    branches:
+      - main
+      - develop
+    paths:
+      - "03-iam/**"
+  workflow_dispatch:
+    inputs:
+      terraform_action:
+        description: "Terraform Action to Perform"
+        required: true
+        default: "apply"
+        type: choice
+        options:
+          - "apply"
+          - "destroy"
+
+jobs:
+  validate_and_plan:
+    name: "03-IAM-CD"
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    uses: ./.github/workflows/template-cd.yaml
+    with:
+      gh_workflow: 03-iam
+    secrets: inherit

@@ -1,0 +1,5 @@
+service_principal_names = [
+"platform-prod-cd",
+"platform-prod-ci"
+]
+mg_id = "atlz"

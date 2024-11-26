@@ -1,0 +1,4 @@
+service_principal_names = [
+"platform-prod-cd",
+"platform-prod-ci"
+]

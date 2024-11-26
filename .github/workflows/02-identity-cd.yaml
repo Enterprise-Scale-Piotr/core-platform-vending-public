@@ -1,0 +1,34 @@
+name: "02-Identity-CD"
+on:
+  push:
+    #types:
+    #  - opened
+    #  - reopened
+    #  - synchronize
+    branches:
+      - main
+      - develop
+    paths:
+      - "02-identity/**"
+  workflow_dispatch:
+    inputs:
+      terraform_action:
+        description: "Terraform Action to Perform"
+        required: true
+        default: "apply"
+        type: choice
+        options:
+          - "apply"
+          - "destroy"
+
+jobs:
+  validate_and_plan:
+    name: "02-Identity-CD"
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    uses: ./.github/workflows/template-cd.yaml
+    with:
+      gh_workflow: 02-identity
+    secrets: inherit
